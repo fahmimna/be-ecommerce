@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+  role_id  Int    @default(2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  carts  Carts[]
+  orders Orders[]
+  role   Roles    @relation(fields: [role_id], references: [id])
+  token  Tokens?
+
+  @@map("users")
+}
+
+model Tokens {
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @unique
+  token      String   @unique
+  expires_at DateTime
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user Users @relation(fields: [user_id], references: [id])
+
+  @@map("tokens")
+}
+
+model Roles {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       Users[]
+  permissions PermissionsRole[]
+
+  @@map("roles")
+}
+
+model PermissionsRole {
+  permission_id Int
+  role_id       Int
+
+  permission Permissions @relation(fields: [permission_id], references: [id])
+  role       Roles       @relation(fields: [role_id], references: [id])
+
+  @@id([permission_id, role_id])
+  @@map("permissions_role")
+}
+
+model Permissions {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles PermissionsRole[]
+
+  @@map("permissions")
+}
+
+model Carts {
+  id         Int   @id @default(autoincrement())
+  user_id    Int   
+  product_id Int
+  quantity   Int   @default(1)
+  total      Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user Users @relation(fields: [user_id], references: [id])
+
+  @@map("carts")
+}
+
+model Products {
+  id          Int     @id @default(autoincrement())
+  name        String
+  price       Float
+  stock       Int     @default(0)
+  category    String
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order_products OrderProducts[]
+
+  @@map("products")
+}
+
+model OrderProducts {
+  order_id   Int
+  product_id Int
+  quantity   Int   @default(1)
+  price      Float @default(0)
+  total      Float @default(0)
+
+  order   Orders   @relation(fields: [order_id], references: [id])
+  product Products @relation(fields: [product_id], references: [id])
+
+  @@id([order_id, product_id])
+  @@map("order_products")
+}
+
+model Orders {
+  id       Int      @id @default(autoincrement())
+  users_id Int
+  date     DateTime @default(now())
+  total    Float
+  status   String   @default("unpaid")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order_products OrderProducts[]
+  users          Users           @relation(fields: [users_id], references: [id])
+
+  @@map("orders")
+}
